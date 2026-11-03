@@ -6,6 +6,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 
 import java.util.List;
@@ -16,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
@@ -117,5 +120,25 @@ class CourseRegistrationServiceTest {
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
         verify(emailSender).send(eq("s7@must.edu.mn"), anyString(), body.capture());
         assertTrue(body.getValue().contains("CS201"));
-}
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "false, false, false, ERROR_NO_STUDENT",
+        "true,  false, false, ERROR_INACTIVE_STUDENT",
+        "true,  true,  false, ERROR_NO_COURSE"
+    })
+    void register_errorCases_returnExpectedError(boolean studentExists, boolean active,
+                                                  boolean courseExists, String expected) {
+        Student student = studentExists
+                ? new Student("S1", "s1@must.edu.mn", active, List.of())
+                : null;
+        lenient().when(repository.findStudent("S1")).thenReturn(student);
+        lenient().when(repository.courseExists("C1")).thenReturn(courseExists);
+
+        String result = service.register("S1", "C1");
+
+        assertEquals(expected, result);
+        verify(repository, never()).saveRegistration(anyString(), anyString());
+    }
 }
