@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 
@@ -11,6 +12,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -18,6 +20,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
+
 
 @ExtendWith(MockitoExtension.class)
 class CourseRegistrationServiceTest {
@@ -101,4 +104,18 @@ class CourseRegistrationServiceTest {
 
         assertThrows(IllegalArgumentException.class, () -> service.register("S1", null));
     }
+
+    @Test
+    void register_success_emailBodyContainsCourseCode() {
+        Student student = new Student("S7", "s7@must.edu.mn", true, List.of("CS101"));
+        when(repository.findStudent("S7")).thenReturn(student);
+        when(repository.courseExists("CS201")).thenReturn(true);
+        when(repository.prerequisites("CS201")).thenReturn(List.of("CS101"));
+
+        service.register("S7", "CS201");
+
+        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
+        verify(emailSender).send(eq("s7@must.edu.mn"), anyString(), body.capture());
+        assertTrue(body.getValue().contains("CS201"));
+}
 }
