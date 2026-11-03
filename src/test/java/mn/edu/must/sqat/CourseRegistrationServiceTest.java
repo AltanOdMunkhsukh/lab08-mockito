@@ -9,12 +9,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -75,5 +76,20 @@ class CourseRegistrationServiceTest {
 
         assertEquals("ERROR_PREREQUISITES", result);
         verify(repository, never()).saveRegistration(anyString(), anyString());
+    }
+
+    @Test
+    void register_emailSenderThrows_stillReturnsOkAndSaves() {
+        Student student = new Student("S5", "s5@must.edu.mn", true, List.of("CS101"));
+        when(repository.findStudent("S5")).thenReturn(student);
+        when(repository.courseExists("CS201")).thenReturn(true);
+        when(repository.prerequisites("CS201")).thenReturn(List.of("CS101"));
+        doThrow(new RuntimeException("SMTP down"))
+            .when(emailSender).send(anyString(), anyString(), anyString());
+
+        String result = service.register("S5", "CS201");
+
+        assertEquals("OK", result);
+        verify(repository).saveRegistration("S5", "CS201");
     }
 }
