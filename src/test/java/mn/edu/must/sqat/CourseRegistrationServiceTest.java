@@ -9,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -91,5 +92,13 @@ class CourseRegistrationServiceTest {
 
         assertEquals("OK", result);
         verify(repository).saveRegistration("S5", "CS201");
+    }
+
+    @Test
+    void register_nullStudentId_throwsIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> service.register(null, "CS201"));
+        verifyNoInteractions(repository, emailSender);
+
+        assertThrows(IllegalArgumentException.class, () -> service.register("S1", null));
     }
 }
