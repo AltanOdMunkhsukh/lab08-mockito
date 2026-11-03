@@ -41,6 +41,7 @@ class CourseRegistrationServiceTest {
         verify(emailSender).send(eq("s1@must.edu.mn"), anyString(), anyString());
     }
 
+
     @Test
     void register_unknownStudent_returnsErrorNoStudentAndDoesNothingElse() {
         when(repository.findStudent("S99")).thenReturn(null);
@@ -61,5 +62,18 @@ class CourseRegistrationServiceTest {
 
         assertEquals("ERROR_INACTIVE_STUDENT", result);
         verifyNoInteractions(emailSender);
-}
+    }
+
+    @Test
+    void register_missingPrerequisites_returnsErrorPrerequisitesAndDoesNotSave() {
+        Student active = new Student("S4", "s4@must.edu.mn", true, List.of("CS101"));
+        when(repository.findStudent("S4")).thenReturn(active);
+        when(repository.courseExists("CS201")).thenReturn(true);
+        when(repository.prerequisites("CS201")).thenReturn(List.of("CS101, CS102"));
+
+        String result = service.register("S4", "CS201");
+
+        assertEquals("ERROR_PREREQUISITES", result);
+        verify(repository, never()).saveRegistration(anyString(), anyString());
+    }
 }
